@@ -20,6 +20,6 @@ The data used comes exclusively from Yahoo Finance and is updated each time the 
 
 The purpose of this project is purely educational: it is intended to explore how to use real financial market data for comparative analysis, build sector indicators, and create simple predictive models. The forecasts made do not in any way constitute financial advice. They are instead an exercise to understand the application of mathematical and statistical tools in the field of quantitative finance.
 
-This project can be expanded in the future with new features, such as risk analysis (volatility, drawdown, Sharpe Ratio), the use of more advanced predictive models like XGBoost or LSTM, or the transformation of the entire system into an interactive web app using Streamlit. Another interesting extension would be to link the system with sentiment analysis based on news or social media, enriching the prediction with exogenous signals.
+This project can be expanded in the future with new features, such as risk analysis (volatility, drawdown, Sharpe Ratio), the use of more advanced predictive models like XGBoost or LSTM, or the transformation of the entire system into an interactive web app.
 
-Created by Pietro Pellegrino – April 2025. All rights reserved. Released under the MIT license.
+Created by Pietro Pellegrino – April 2025. Released under the MIT license.
