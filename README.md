@@ -70,5 +70,6 @@ Install everything with:
 
 ```bash
 pip install yfinance pandas matplotlib numpy arch scikit-learn
+```
 
 Created by Pietro Pellegrino – April 2025. Released under the MIT license.
