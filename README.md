@@ -72,4 +72,31 @@ Install everything with:
 pip install yfinance pandas matplotlib numpy arch scikit-learn
 ```
 
-Created by Pietro Pellegrino – April 2025. Released under the MIT license.
+---
+
+## 📁 Output Files
+
+- `forecast_fang_oil.png`: Visualization of trend and volatility forecasts for all stocks.
+- `forecast_vs_real_results.csv`: Table comparing predicted vs real returns and volatilities over the next 3 days.
+
+---
+
+## 🎯 Conclusion
+
+This project shows the **importance of choosing the right forecasting model** based on the nature of the data:
+
+- Long-term financial forecasting is unreliable without modeling volatility.
+- **Short-term, volatility-driven forecasting** (like GARCH) gives more meaningful insights into stock behavior.
+- **Comparing predictions with real results** strengthens model evaluation and improves understanding of financial dynamics.
+
+---
+
+## ⚠️ Disclaimer
+
+This project is developed solely for **learning and educational purposes**.  
+It does **not** provide financial advice, stock recommendations, or investment guidance.
+
+---
+
+_Developed and programmed by Pietro Pellegrino — April 2025_  
+_License: MIT_
