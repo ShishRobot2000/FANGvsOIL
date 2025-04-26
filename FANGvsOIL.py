@@ -1,65 +1,113 @@
 import yfinance as yf
 import pandas as pd
-import matplotlib.pyplot as plt
 import numpy as np
+import matplotlib.pyplot as plt
+from arch import arch_model
 from sklearn.linear_model import LinearRegression
 
-# Define stock tickers
-tech_tickers = ['META', 'AMZN', 'NFLX', 'GOOGL', 'AAPL', 'MSFT', 'TSLA']
+# Step 1. Download historical data up to 3 days ago
+fang_tickers = ['META', 'AMZN', 'NFLX', 'GOOGL']
 oil_tickers = ['XOM', 'CVX', 'SHEL', 'BP', 'TTE']
-tickers = tech_tickers + oil_tickers
+all_tickers = fang_tickers + oil_tickers
 
-# Download stock data from Yahoo Finance
-data = yf.download(tickers, start='2014-01-01', end='2024-01-01', group_by='ticker', auto_adjust=False)
-adj_close = pd.DataFrame({ticker: data[ticker]['Adj Close'] for ticker in tickers})
+end_date = pd.Timestamp.today() - pd.Timedelta(days=3)
+start_date = '2014-01-01'
 
-# Calculate cumulative returns
-returns = adj_close.pct_change().fillna(0)
-cumulative = (1 + returns).cumprod()
+print(f"Downloading historical data up to {end_date.strftime('%Y-%m-%d')}...")
 
-# Compute sector averages
-cumulative['TECH_MEAN'] = cumulative[tech_tickers].mean(axis=1)
-cumulative['OIL_MEAN'] = cumulative[oil_tickers].mean(axis=1)
+data = yf.download(all_tickers, start=start_date, end=end_date.strftime('%Y-%m-%d'), group_by='ticker', auto_adjust=False)
+adj_close = pd.DataFrame({ticker: data[ticker]['Adj Close'] for ticker in all_tickers})
 
-# Linear regression forecast function
-def predict(series, days=252*5):
-    X = np.arange(len(series)).reshape(-1, 1)
-    y = series.values
-    model = LinearRegression()
-    model.fit(X, y)
-    future_X = np.arange(len(series) + days).reshape(-1, 1)
-    y_pred = model.predict(future_X)
-    return y_pred
+# Step 2. Calculate daily returns
+returns = adj_close.pct_change().dropna()
 
-# Forecast for the next 5 years
-tech_pred = predict(cumulative['TECH_MEAN'])
-oil_pred = predict(cumulative['OIL_MEAN'])
-dates = pd.date_range(start=cumulative.index[0], periods=len(tech_pred), freq='B')
+# Step 3. Forecast 3 days ahead (Trend + Volatility)
+trend_forecasts = {}
+volatility_forecasts = {}
 
-# Plotting the results
-plt.figure(figsize=(14, 10))
+# Create figure for all plots
+plt.figure(figsize=(18, 12))
 
-# Plot 1: All stocks + sector averages
-plt.subplot(2, 1, 1)
-for t in tech_tickers:
-    plt.plot(cumulative[t], linewidth=1, label=f'Tech: {t}')
-for t in oil_tickers:
-    plt.plot(cumulative[t], linestyle='--', linewidth=1, label=f'Oil: {t}')
-plt.plot(cumulative['TECH_MEAN'], color='black', linewidth=3, label='📱 Tech Avg')
-plt.plot(cumulative['OIL_MEAN'], color='gray', linewidth=3, linestyle='--', label='🛢️ Oil Avg')
-plt.title('Cumulative Returns – All Stocks (2014–2024)')
-plt.legend(ncol=2, fontsize=8)
-plt.grid()
+plot_index = 1
 
-# Plot 2: Sector averages + forecast
-plt.subplot(2, 1, 2)
-plt.plot(cumulative['TECH_MEAN'], label='📱 Tech Historical', color='black')
-plt.plot(cumulative['OIL_MEAN'], label='🛢️ Oil Historical', color='gray')
-plt.plot(dates, tech_pred, '--', label='📈 Tech Forecast (5y)', color='black')
-plt.plot(dates, oil_pred, '--', label='📉 Oil Forecast (5y)', color='gray')
-plt.title('5-Year Forecast – Sector Averages (Linear Regression)')
-plt.grid()
-plt.legend()
-plt.tight_layout()
-plt.show()
+for ticker in all_tickers:
+    print(f"\n📈 Forecasting for {ticker}...")
+    ret_series = returns[ticker].dropna()
+    
+    # Forecast trend with Linear Regression
+    X = np.arange(len(ret_series)).reshape(-1, 1)
+    y = ret_series.values
+    model_lr = LinearRegression()
+    model_lr.fit(X, y)
+    future_X = np.arange(len(ret_series), len(ret_series) + 3).reshape(-1, 1)
+    trend_pred = model_lr.predict(future_X)
+    trend_forecasts[ticker] = trend_pred
 
+    # Forecast volatility with GARCH
+    model_garch = arch_model(ret_series * 100, vol='Garch', p=1, q=1)
+    garch_fit = model_garch.fit(disp='off')
+    garch_forecast = garch_fit.forecast(horizon=3)
+    volatility_pred = np.sqrt(garch_forecast.variance.iloc[-1])
+    volatility_forecasts[ticker] = volatility_pred.values
+
+    # Plotting forecasts
+    plt.subplot(4, 3, plot_index)
+    plt.plot(range(1, 4), trend_pred * 100, label="Trend forecast (%)", marker='o')
+    plt.plot(range(1, 4), volatility_pred, label="Volatility forecast (%)", marker='x')
+    plt.title(f"{ticker} - 3 Day Forecast")
+    plt.xlabel("Days Ahead")
+    plt.ylabel("% Return / Volatility")
+    plt.grid(True)
+    plt.legend()
+    plot_index += 1
+
+plt.suptitle("FANG & OIL - 3-Day Trend and Volatility Forecasts", fontsize=18)
+plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+plt.savefig("forecast_fang_oil.png")
+print("\n✅ Forecast plots saved as 'forecast_fang_oil.png'.")
+
+# Step 4. Download real stock data (last 3 missing days)
+real_start = (pd.Timestamp.today() - pd.Timedelta(days=3)).strftime('%Y-%m-%d')
+real_end = pd.Timestamp.today().strftime('%Y-%m-%d')
+
+print(f"\nDownloading real stock data from {real_start} to {real_end}...")
+
+real_data = yf.download(all_tickers, start=real_start, end=real_end, group_by='ticker', auto_adjust=False)
+real_adj_close = pd.DataFrame({ticker: real_data[ticker]['Adj Close'] for ticker in all_tickers})
+
+# Step 5. Calculate real returns
+real_returns = real_adj_close.pct_change().dropna()
+
+# Step 6. Compare forecast vs real for each stock
+print("\n🔍 Comparing Forecast vs Real Returns and Volatility (Over 3 Days)\n")
+comparison_table = []
+
+for ticker in all_tickers:
+    if ticker not in real_returns.columns:
+        print(f"⚠️ No real data for {ticker} — skipping.")
+        continue
+    
+    real_ret = real_returns[ticker].values[:3]  # Real returns (next 3 days)
+    pred_ret = trend_forecasts[ticker]
+    pred_vol = volatility_forecasts[ticker]
+    
+    # Save comparison
+    for i in range(len(real_ret)):
+        comparison_table.append({
+            'Ticker': ticker,
+            'Day': i + 1,
+            'Predicted Return (%)': round(pred_ret[i] * 100, 3),
+            'Real Return (%)': round(real_ret[i] * 100, 3),
+            'Predicted Volatility (%)': round(pred_vol[i], 3),
+            'Real Volatility Approx (%)': round(abs(real_ret[i]) * 100, 3)
+    })
+
+# Convert to DataFrame
+comparison_df = pd.DataFrame(comparison_table)
+
+# Print nicely
+print(comparison_df.to_string(index=False))
+
+# Save results
+comparison_df.to_csv("forecast_vs_real_results.csv", index=False)
+print("\n✅ Results saved to 'forecast_vs_real_results.csv'.")
