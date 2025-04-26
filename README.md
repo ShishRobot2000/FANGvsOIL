@@ -7,7 +7,7 @@ This project analyzes and forecasts the short-term behavior of two major sectors
 - 📱 FANG stocks: META, AMZN, NFLX, GOOGL
 - 🛢️ Oil stocks: XOM, CVX, SHEL, BP, TTE
 
-We initially compared long-term performance (10 years) but later **refined the scope to a short-term (3 days) prediction**, focusing separately on:
+We initially compared long-term performance (5 years) but later **refined the scope to a short-term (3 days) prediction**, focusing separately on:
 
 - **Trend prediction** (returns forecast)
 - **Volatility prediction** (risk forecast)
